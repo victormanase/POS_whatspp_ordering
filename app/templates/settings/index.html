@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Settings</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#general" class="list-group-item list-group-item-action active" data-bs-toggle="pill">
+                        <i class="fas fa-cog me-2"></i>General
+                    </a>
+                    <a href="#currency" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                        <i class="fas fa-money-bill me-2"></i>Currency
+                    </a>
+                    <a href="#users" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                        <i class="fas fa-users me-2"></i>Users
+                    </a>
+                    <a href="#receipts" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                        <i class="fas fa-receipt me-2"></i>Receipts
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="tab-content">
+                <!-- General Settings -->
+                <div class="tab-pane fade show active" id="general">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">General Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="{{ url_for('settings.update_general_settings') }}" method="POST">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="company_name" class="form-label">Company Name</label>
+                                            <input type="text" class="form-control" id="company_name" name="company_name" 
+                                                   value="{{ settings.get('company_name', '') }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="company_phone" class="form-label">Phone Number</label>
+                                            <input type="tel" class="form-control" id="company_phone" name="company_phone" 
+                                                   value="{{ settings.get('company_phone', '') }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="company_email" class="form-label">Email Address</label>
+                                            <input type="email" class="form-control" id="company_email" name="company_email" 
+                                                   value="{{ settings.get('company_email', '') }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="company_address" class="form-label">Address</label>
+                                            <textarea class="form-control" id="company_address" name="company_address" 
+                                                      rows="3">{{ settings.get('company_address', '') }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Currency Settings -->
+                <div class="tab-pane fade" id="currency">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Currency Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="alert alert-info">
+                                        <h6 class="alert-heading">Current Currency</h6>
+                                        <p class="mb-2">
+                                            <strong>{{ current_currency.name }}</strong> ({{ current_currency.code }})
+                                        </p>
+                                        <p class="mb-0">
+                                            Symbol: <strong>{{ current_currency.symbol }}</strong> | 
+                                            Country: {{ current_currency.country }}
+                                        </p>
+                                        <hr>
+                                        <p class="mb-0">
+                                            Example: {{ formatCurrency(12345.67) }}
+                                        </p>
+                                    </div>
+
+                                    <form id="currencyForm" action="{{ url_for('settings.currency_settings') }}" method="POST">
+                                        <div class="mb-3">
+                                            <label for="currency_code" class="form-label">Select Currency</label>
+                                            <select class="form-select" id="currency_code" name="currency_code" required>
+                                                {% for currency in currency_list %}
+                                                <option value="{{ currency.code }}" 
+                                                        {% if currency.code == current_currency.code %}selected{% endif %}>
+                                                    {{ currency.name }} ({{ currency.code }}) - {{ currency.symbol }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                                            <button type="submit" class="btn btn-primary" id="saveCurrencyBtn">
+                                                <i class="fas fa-save me-1"></i>Update Currency
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="card bg-light">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">Supported Currencies</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                {% for currency in currency_list %}
+                                                <div class="col-12 mb-2">
+                                                    <small>
+                                                        <strong>{{ currency.code }}</strong> - {{ currency.symbol }}<br>
+                                                        <span class="text-muted">{{ currency.country }}</span>
+                                                    </small>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Management -->
+                <div class="tab-pane fade" id="users">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">User Management</h5>
+                            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                <i class="fas fa-plus me-1"></i>Add User
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="usersContainer">
+                                <p>Loading users...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receipt Settings -->
+                <div class="tab-pane fade" id="receipts">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Receipt Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="{{ url_for('settings.update_general_settings') }}" method="POST">
+                                <div class="mb-3">
+                                    <label for="receipt_footer" class="form-label">Receipt Footer Message</label>
+                                    <textarea class="form-control" id="receipt_footer" name="receipt_footer" 
+                                              rows="3" placeholder="Thank you for your business!">{{ settings.get('receipt_footer', '') }}</textarea>
+                                    <div class="form-text">This message will appear at the bottom of all receipts.</div>
+                                </div>
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="submit" class="btn btn-primary">Save Receipt Settings</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin">
+                        <label class="form-check-label" for="is_admin">Admin User</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addUser()">Add User</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Currency form submission
+    document.getElementById('currencyForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const button = document.getElementById('saveCurrencyBtn');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+        button.disabled = true;
+        
+        const formData = new FormData(this);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Currency updated successfully!', 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showAlert(data.message || 'Failed to update currency', 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error updating currency', 'danger');
+        })
+        .finally(() => {
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    });
+
+    // Load users when users tab is shown
+    document.querySelector('a[href="#users"]').addEventListener('shown.bs.tab', function() {
+        loadUsers();
+    });
+});
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+function loadUsers() {
+    fetch('{{ url_for("settings.user_management") }}')
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const usersTable = doc.querySelector('.table');
+            
+            if (usersTable) {
+                document.getElementById('usersContainer').innerHTML = usersTable.outerHTML;
+            } else {
+                document.getElementById('usersContainer').innerHTML = '<p>No users found</p>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('usersContainer').innerHTML = '<p>Error loading users</p>';
+        });
+}
+
+function addUser() {
+    const form = document.getElementById('addUserForm');
+    const formData = new FormData(form);
+    
+    // This would be implemented with a proper endpoint
+    showAlert('User management functionality will be implemented soon', 'info');
+}
+
+function toggleUserStatus(userId) {
+    fetch(`{{ url_for('settings.toggle_user_status', user_id=0) }}`.replace('0', userId), {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            loadUsers();
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Error updating user status', 'danger');
+    });
+}
+
+function toggleAdminStatus(userId) {
+    fetch(`{{ url_for('settings.toggle_admin_status', user_id=0) }}`.replace('0', userId), {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            loadUsers();
+        } else {
+            showAlert(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Error updating admin status', 'danger');
+    });
+}
+</script>
+{% endblock %}

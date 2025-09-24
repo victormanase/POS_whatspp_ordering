@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Product{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Edit Product</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('products.view_product', id=product.id) }}" class="btn btn-outline-info">
+                        <i class="fas fa-eye me-1"></i>View Product
+                    </a>
+                    <a href="{{ url_for('products.products') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Products
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Product Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" enctype="multipart/form-data" id="editProductForm">
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.name.label(class="form-label") }}
+                                            {{ form.name(class="form-control") }}
+                                            {% if form.name.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.name.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.barcode.label(class="form-label") }}
+                                            <div class="input-group">
+                                                {{ form.barcode(class="form-control") }}
+                                                <button type="button" class="btn btn-outline-secondary" onclick="generateBarcode()">
+                                                    <i class="fas fa-random"></i>
+                                                </button>
+                                            </div>
+                                            {% if form.barcode.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.barcode.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.description.label(class="form-label") }}
+                                    {{ form.description(class="form-control", rows="3") }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.description.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.category_id.label(class="form-label") }}
+                                            {{ form.category_id(class="form-select") }}
+                                            {% if form.category_id.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.category_id.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.image.label(class="form-label") }}
+                                            {{ form.image(class="form-control") }}
+                                            {% if form.image.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.image.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">Upload new image (optional) - leave blank to keep current image</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.buying_price.label(class="form-label") }}
+                                            <div class="input-group">
+                                                <span class="input-group-text">{{ get_current_currency().symbol }}</span>
+                                                {{ form.buying_price(class="form-control", step="0.01") }}
+                                            </div>
+                                            {% if form.buying_price.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.buying_price.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            {{ form.selling_price.label(class="form-label") }}
+                                            <div class="input-group">
+                                                <span class="input-group-text">{{ get_current_currency().symbol }}</span>
+                                                {{ form.selling_price(class="form-control", step="0.01") }}
+                                            </div>
+                                            {% if form.selling_price.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.selling_price.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form.stock_quantity.label(class="form-label") }}
+                                            <div class="input-group">
+                                                <span class="input-group-text">Current: {{ product.stock_quantity }}</span>
+                                                {{ form.stock_quantity(class="form-control") }}
+                                            </div>
+                                            {% if form.stock_quantity.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.stock_quantity.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">Leave blank to keep current stock level</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form.reorder_level.label(class="form-label") }}
+                                            {{ form.reorder_level(class="form-control") }}
+                                            {% if form.reorder_level.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.reorder_level.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">Minimum stock before reorder alert</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tax Setting</label>
+                                            <div class="form-check">
+                                                {{ form.tax_inclusive(class="form-check-input") }}
+                                                {{ form.tax_inclusive.label(class="form-check-label") }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{{ url_for('products.products') }}" class="btn btn-secondary me-md-2">
+                                        <i class="fas fa-times me-1"></i>Cancel
+                                    </a>
+                                    {{ form.submit(class="btn btn-primary") }}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <!-- Current Product Image -->
+                    {% if product.image_filename %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">Current Image</h6>
+                        </div>
+                        <div class="card-body text-center">
+                            <img src="{{ url_for('static', filename='uploads/' + product.image_filename) }}" 
+                                 class="img-fluid rounded" alt="{{ product.name }}" style="max-height: 200px;">
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Pricing Information -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Current Pricing</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="currentPricing">
+                                <div class="row text-center mb-3">
+                                    <div class="col-6">
+                                        <div class="border-end">
+                                            <small class="text-muted">Buying Price</small>
+                                            <div class="fw-bold">{{ formatCurrency(product.buying_price) }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Selling Price</small>
+                                        <div class="fw-bold">{{ formatCurrency(product.selling_price) }}</div>
+                                    </div>
+                                </div>
+                                {% if product.buying_price > 0 %}
+                                <div class="text-center">
+                                    <small class="text-muted">Current Profit</small>
+                                    <div class="fw-bold text-success">
+                                        {{ formatCurrency(product.selling_price - product.buying_price) }}
+                                        <small>({{ "%.1f"|format(((product.selling_price - product.buying_price) / product.buying_price) * 100) }}%)</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <hr>
+                            <div id="newPricing">
+                                <p class="text-muted small">Update prices above to see new profit calculation.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Statistics -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">Product Statistics</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="border-end">
+                                        <h5 class="text-primary mb-1">{{ product.stock_quantity }}</h5>
+                                        <small class="text-muted">In Stock</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <h5 class="text-warning mb-1">{{ product.reorder_level }}</h5>
+                                    <small class="text-muted">Reorder Level</small>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="row text-center">
+                                <div class="col-12">
+                                    <small class="text-muted">Stock Status</small>
+                                    <div>
+                                        {% if product.is_low_stock %}
+                                        <span class="badge bg-warning">Low Stock</span>
+                                        {% elif product.stock_quantity == 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                        {% else %}
+                                        <span class="badge bg-success">In Stock</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Info -->
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h6 class="card-title">Information</h6>
+                            <div class="row small">
+                                <div class="col-6">
+                                    <div class="mb-2">
+                                        <strong>Created:</strong><br>
+                                        {{ product.created_at.strftime('%b %d, %Y') if product.created_at else 'N/A' }}
+                                    </div>
+                                    <div>
+                                        <strong>Product ID:</strong><br>
+                                        #{{ product.id }}
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="mb-2">
+                                        <strong>Last Updated:</strong><br>
+                                        {{ product.updated_at.strftime('%b %d, %Y') if product.updated_at else 'N/A' }}
+                                    </div>
+                                    <div>
+                                        <strong>Status:</strong><br>
+                                        {% if product.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function generateBarcode() {
+    const barcodeField = document.getElementById('barcode');
+    const randomCode = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    barcodeField.value = randomCode.substr(0, 12);
+}
+
+function calculateNewProfitMargin() {
+    const buyingPrice = parseFloat(document.getElementById('buying_price').value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('selling_price').value) || 0;
+    
+    const newPricing = document.getElementById('newPricing');
+    
+    if (buyingPrice > 0 && sellingPrice > 0) {
+        const profit = sellingPrice - buyingPrice;
+        const marginPercent = ((profit / buyingPrice) * 100).toFixed(2);
+        
+        let profitClass = 'text-success';
+        if (marginPercent < 10) profitClass = 'text-warning';
+        if (marginPercent < 0) profitClass = 'text-danger';
+        
+        newPricing.innerHTML = `
+            <div class="text-center">
+                <small class="text-muted">New Profit</small>
+                <div class="fw-bold ${profitClass}">
+                    {{ get_current_currency().symbol }} ${profit.toFixed(2)}
+                    <small>(${marginPercent}%)</small>
+                </div>
+            </div>
+        `;
+    } else {
+        newPricing.innerHTML = '<p class="text-muted small">Update prices above to see new profit calculation.</p>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for price calculation
+    const buyingPriceField = document.getElementById('buying_price');
+    const sellingPriceField = document.getElementById('selling_price');
+    
+    if (buyingPriceField) buyingPriceField.addEventListener('input', calculateNewProfitMargin);
+    if (sellingPriceField) sellingPriceField.addEventListener('input', calculateNewProfitMargin);
+    
+    // Calculate initial values
+    calculateNewProfitMargin();
+});
+</script>
+{% endblock %}

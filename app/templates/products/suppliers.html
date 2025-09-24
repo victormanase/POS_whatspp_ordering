@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+
+{% block title %}Suppliers{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-truck me-2"></i>Suppliers</h2>
+                <a href="{{ url_for('products.add_supplier') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Supplier
+                </a>
+            </div>
+
+            {% if suppliers %}
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Total Suppliers</h6>
+                                    <h4 class="mb-0">{{ suppliers|length }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-truck fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Active Suppliers</h6>
+                                    <h4 class="mb-0">{{ suppliers|selectattr('is_active', 'equalto', true)|list|length }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Recent Purchases</h6>
+                                    <h4 class="mb-0">-</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-shopping-cart fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Pending Orders</h6>
+                                    <h4 class="mb-0">-</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-clock fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suppliers Table -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-0">Suppliers List</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchSupplier" placeholder="Search suppliers...">
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="suppliersTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Supplier Name</th>
+                                    <th>Contact Person</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Location</th>
+                                    <th>Products Supplied</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for supplier in suppliers %}
+                                <tr data-supplier-id="{{ supplier.id }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="fas fa-truck text-white"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ supplier.name }}</strong>
+                                                <br><small class="text-muted">ID: #{{ supplier.id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if supplier.contact_person %}
+                                            {{ supplier.contact_person }}
+                                        {% else %}
+                                            <span class="text-muted">Not specified</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if supplier.phone %}
+                                            <a href="tel:{{ supplier.phone }}" class="text-decoration-none">
+                                                <i class="fas fa-phone me-1"></i>{{ supplier.phone }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">No phone</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if supplier.email %}
+                                            <a href="mailto:{{ supplier.email }}" class="text-decoration-none">
+                                                <i class="fas fa-envelope me-1"></i>{{ supplier.email }}
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">No email</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if supplier.address %}
+                                            <span title="{{ supplier.address }}">{{ supplier.address[:30] }}{% if supplier.address|length > 30 %}...{% endif %}</span>
+                                        {% else %}
+                                            <span class="text-muted">No address</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if supplier.purchases %}
+                                            <span class="badge bg-info">{{ supplier.purchases|length }} orders</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No orders</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if supplier.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-info" 
+                                                    onclick="viewSupplier({{ supplier.id }})" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <a href="{{ url_for('products.edit_supplier', id=supplier.id) }}" 
+                                               class="btn btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="recordPurchase({{ supplier.id }})" title="Record Purchase">
+                                                <i class="fas fa-shopping-cart"></i>
+                                            </button>
+                                            {% if supplier.is_active %}
+                                            <button type="button" class="btn btn-outline-warning" 
+                                                    onclick="toggleSupplier({{ supplier.id }}, false)" title="Deactivate">
+                                                <i class="fas fa-pause"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="toggleSupplier({{ supplier.id }}, true)" title="Activate">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="deleteSupplier({{ supplier.id }}, '{{ supplier.name }}')" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+                    <h5>No Suppliers Yet</h5>
+                    <p class="text-muted">Start by adding suppliers to manage your procurement process.</p>
+                    <a href="{{ url_for('products.add_supplier') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add First Supplier
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Supplier Details Modal -->
+<div class="modal fade" id="supplierDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Supplier Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="supplierDetailsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editCurrentSupplier()">Edit Supplier</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalTitle">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                Are you sure you want to perform this action?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmModalBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentSupplierId = null;
+
+// Search functionality
+document.getElementById('searchSupplier').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#suppliersTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+function viewSupplier(supplierId) {
+    currentSupplierId = supplierId;
+    
+    fetch(`/products/suppliers/${supplierId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const supplier = data.supplier;
+                const content = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-truck me-2"></i>Basic Information</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Name:</strong></td><td>${supplier.name}</td></tr>
+                                <tr><td><strong>Contact Person:</strong></td><td>${supplier.contact_person || 'Not specified'}</td></tr>
+                                <tr><td><strong>Phone:</strong></td><td>${supplier.phone || 'Not specified'}</td></tr>
+                                <tr><td><strong>Email:</strong></td><td>${supplier.email || 'Not specified'}</td></tr>
+                                <tr><td><strong>Status:</strong></td><td>
+                                    <span class="badge ${supplier.is_active ? 'bg-success' : 'bg-danger'}">
+                                        ${supplier.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                </td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-map-marker-alt me-2"></i>Address</h6>
+                            <p class="text-muted">${supplier.address || 'No address specified'}</p>
+                            
+                            <h6><i class="fas fa-shopping-cart me-2"></i>Purchase History</h6>
+                            <p>Total Orders: <strong>${supplier.purchase_count || 0}</strong></p>
+                            <p>Total Amount: <strong>${supplier.total_purchases || 'TSh 0'}</strong></p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('supplierDetailsContent').innerHTML = content;
+                
+                const modal = new bootstrap.Modal(document.getElementById('supplierDetailsModal'));
+                modal.show();
+            } else {
+                alert('Error loading supplier details: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading supplier details');
+        });
+}
+
+function editCurrentSupplier() {
+    if (currentSupplierId) {
+        window.location.href = `/products/suppliers/edit/${currentSupplierId}`;
+    }
+}
+
+function recordPurchase(supplierId) {
+    window.location.href = `/products/purchases/add?supplier_id=${supplierId}`;
+}
+
+function toggleSupplier(supplierId, activate) {
+    const action = activate ? 'activate' : 'deactivate';
+    const supplierName = document.querySelector(`tr[data-supplier-id="${supplierId}"] strong`).textContent;
+    
+    document.getElementById('confirmModalTitle').textContent = `${activate ? 'Activate' : 'Deactivate'} Supplier`;
+    document.getElementById('confirmModalBody').innerHTML = `
+        Are you sure you want to ${action} supplier "<strong>${supplierName}</strong>"?
+    `;
+    
+    const confirmBtn = document.getElementById('confirmModalBtn');
+    confirmBtn.textContent = activate ? 'Activate' : 'Deactivate';
+    confirmBtn.className = `btn ${activate ? 'btn-success' : 'btn-warning'}`;
+    
+    confirmBtn.onclick = function() {
+        fetch(`/products/suppliers/toggle/${supplierId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ active: activate })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error toggling supplier status');
+        });
+        
+        bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+    };
+    
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+}
+
+function deleteSupplier(supplierId, supplierName) {
+    document.getElementById('confirmModalTitle').textContent = 'Delete Supplier';
+    document.getElementById('confirmModalBody').innerHTML = `
+        Are you sure you want to delete supplier "<strong>${supplierName}</strong>"?<br>
+        <small class="text-danger">This action cannot be undone!</small>
+    `;
+    
+    const confirmBtn = document.getElementById('confirmModalBtn');
+    confirmBtn.textContent = 'Delete';
+    confirmBtn.className = 'btn btn-danger';
+    
+    confirmBtn.onclick = function() {
+        fetch(`/products/suppliers/delete/${supplierId}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting supplier');
+        });
+        
+        bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+    };
+    
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

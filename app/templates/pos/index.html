@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Product Search -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="product-search">
+                    <label for="productSearch" class="form-label">Search Products</label>
+                    <input type="text" class="form-control form-control-lg" id="productSearch" 
+                           placeholder="Search by name or scan barcode...">
+                    <div class="search-results" id="searchResults" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shopping Cart -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Shopping Cart</h5>
+            </div>
+            <div class="card-body">
+                <div id="cartItems">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                        <p>Cart is empty. Start scanning or searching for products.</p>
+                    </div>
+                </div>
+                
+                <!-- Cart Totals -->
+                <div id="cartTotals" class="border-top pt-3" style="display: none;">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="mb-2">
+                                <strong>Subtotal: <span id="subtotal">KES 0.00</span></strong>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Tax: <span id="taxAmount">KES 0.00</span></strong>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Discount: <span id="discountTotal">KES 0.00</span></strong>
+                            </div>
+                            <hr>
+                            <div class="mb-2">
+                                <h4>Total: <span id="grandTotal" class="text-primary">KES 0.00</span></h4>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <button type="button" class="btn btn-success btn-lg w-100" id="checkoutBtn">
+                                <i class="fas fa-check me-2"></i>Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Sale Form -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Sale Details</h5>
+            </div>
+            <div class="card-body">
+                <form id="saleForm" method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.customer_name.label(class="form-label") }}
+                        {{ form.customer_name(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.customer_phone.label(class="form-label") }}
+                        {{ form.customer_phone(class="form-control") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.payment_method.label(class="form-label") }}
+                        {{ form.payment_method(class="form-select") }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.discount_amount.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text">KES</span>
+                            {{ form.discount_amount(class="form-control", id="discountInput") }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.notes.label(class="form-label") }}
+                        {{ form.notes(class="form-control", rows="3") }}
+                    </div>
+                    
+                    {{ form.cart_data() }}
+                </form>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearCart()">
+                        <i class="fas fa-trash me-2"></i>Clear Cart
+                    </button>
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('products.add_product') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus me-2"></i>Add Product
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending WhatsApp Orders -->
+        {% if pending_orders %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Pending WhatsApp Orders</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for order in pending_orders %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ order.product.name }}</h6>
+                                <p class="mb-1 small text-muted">{{ order.customer_phone }}</p>
+                                <small class="text-muted">Qty: {{ order.quantity }}</small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="convertWhatsAppOrder({{ order.id }})">
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Checkout Modal -->
+<div class="modal fade" id="checkoutModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complete Sale</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="saleConfirmation"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmSaleBtn">Complete Sale</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let cart = [];
+const TAX_RATE = {{ tax_rate }};
+
+// Initialize cart if there's initial data
+{% if initial_cart %}
+cart = {{ initial_cart | tojson }};
+updateCartDisplay();
+{% endif %}
+
+// Product search functionality
+let searchTimeout;
+document.getElementById('productSearch').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+    
+    if (query.length < 2) {
+        hideSearchResults();
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        searchProducts(query);
+    }, 300);
+});
+
+// Hide search results when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.product-search')) {
+        hideSearchResults();
+    }
+});
+
+function searchProducts(query) {
+    const isBarcode = /^\d{8,}$/.test(query);
+    const url = isBarcode ? 
+        `{{ url_for('pos.search_products') }}?barcode=${encodeURIComponent(query)}` :
+        `{{ url_for('pos.search_products') }}?q=${encodeURIComponent(query)}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(products => {
+            displaySearchResults(products);
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+        });
+}
+
+function displaySearchResults(products) {
+    const resultsDiv = document.getElementById('searchResults');
+    
+    if (products.length === 0) {
+        resultsDiv.innerHTML = '<div class="search-item text-muted">No products found</div>';
+    } else {
+        resultsDiv.innerHTML = products.map(product => `
+            <div class="search-item" onclick="addToCart(${product.id}, '${product.name}', ${product.price}, '${product.barcode}', ${product.stock})">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${product.name}</strong><br>
+                        <small class="text-muted">Stock: ${product.stock} | ${formatCurrency(product.price)}</small>
+                    </div>
+                    <i class="fas fa-plus text-success"></i>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    resultsDiv.style.display = 'block';
+}
+
+function hideSearchResults() {
+    document.getElementById('searchResults').style.display = 'none';
+}
+
+function addToCart(productId, name, price, barcode, stock) {
+    // Check if product already in cart
+    const existingItem = cart.find(item => item.product_id === productId);
+    
+    if (existingItem) {
+        if (existingItem.quantity >= stock) {
+            alert('Cannot add more items. Insufficient stock.');
+            return;
+        }
+        existingItem.quantity += 1;
+    } else {
+        if (stock <= 0) {
+            alert('Product is out of stock.');
+            return;
+        }
+        cart.push({
+            product_id: productId,
+            name: name,
+            price: price,
+            quantity: 1,
+            barcode: barcode,
+            stock: stock
+        });
+    }
+    
+    updateCartDisplay();
+    document.getElementById('productSearch').value = '';
+    hideSearchResults();
+}
+
+function removeFromCart(productId) {
+    cart = cart.filter(item => item.product_id !== productId);
+    updateCartDisplay();
+}
+
+function updateQuantity(productId, quantity) {
+    const item = cart.find(item => item.product_id === productId);
+    if (item) {
+        if (quantity > item.stock) {
+            alert('Cannot exceed available stock.');
+            return;
+        }
+        if (quantity <= 0) {
+            removeFromCart(productId);
+        } else {
+            item.quantity = quantity;
+            updateCartDisplay();
+        }
+    }
+}
+
+function updateCartDisplay() {
+    const cartItemsDiv = document.getElementById('cartItems');
+    const cartTotalsDiv = document.getElementById('cartTotals');
+    
+    if (cart.length === 0) {
+        cartItemsDiv.innerHTML = `
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                <p>Cart is empty. Start scanning or searching for products.</p>
+            </div>
+        `;
+        cartTotalsDiv.style.display = 'none';
+        return;
+    }
+    
+    cartItemsDiv.innerHTML = `
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${cart.map(item => `
+                        <tr>
+                            <td>
+                                <strong>${item.name}</strong><br>
+                                <small class="text-muted">Stock: ${item.stock}</small>
+                            </td>
+                            <td>${formatCurrency(item.price)}</td>
+                            <td>
+                                <div class="input-group" style="width: 120px;">
+                                    <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                            onclick="updateQuantity(${item.product_id}, ${item.quantity - 1})">-</button>
+                                    <input type="number" class="form-control form-control-sm text-center" 
+                                           value="${item.quantity}" min="1" max="${item.stock}"
+                                           onchange="updateQuantity(${item.product_id}, parseInt(this.value))">
+                                    <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                            onclick="updateQuantity(${item.product_id}, ${item.quantity + 1})">+</button>
+                                </div>
+                            </td>
+                            <td><strong>${formatCurrency(item.price * item.quantity)}</strong></td>
+                            <td>
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        onclick="removeFromCart(${item.product_id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    updateTotals();
+    cartTotalsDiv.style.display = 'block';
+}
+
+function updateTotals() {
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discountAmount = parseFloat(document.getElementById('discountInput').value) || 0;
+    const taxAmount = subtotal * TAX_RATE;
+    const total = subtotal + taxAmount - discountAmount;
+    
+    document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+    document.getElementById('taxAmount').textContent = formatCurrency(taxAmount);
+    document.getElementById('discountTotal').textContent = formatCurrency(discountAmount);
+    document.getElementById('grandTotal').textContent = formatCurrency(total);
+}
+
+function clearCart() {
+    if (cart.length > 0 && confirm('Are you sure you want to clear the cart?')) {
+        cart = [];
+        updateCartDisplay();
+    }
+}
+
+// Discount input change handler
+document.getElementById('discountInput').addEventListener('input', updateTotals);
+
+// Checkout functionality
+document.getElementById('checkoutBtn').addEventListener('click', function() {
+    if (cart.length === 0) {
+        alert('Cart is empty!');
+        return;
+    }
+    
+    // Show confirmation modal
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discountAmount = parseFloat(document.getElementById('discountInput').value) || 0;
+    const taxAmount = subtotal * TAX_RATE;
+    const total = subtotal + taxAmount - discountAmount;
+    
+    document.getElementById('saleConfirmation').innerHTML = `
+        <div class="mb-3">
+            <h6>Sale Summary</h6>
+            <table class="table table-sm">
+                <tr><td>Subtotal:</td><td class="text-end">${formatCurrency(subtotal)}</td></tr>
+                <tr><td>Tax:</td><td class="text-end">${formatCurrency(taxAmount)}</td></tr>
+                <tr><td>Discount:</td><td class="text-end">${formatCurrency(discountAmount)}</td></tr>
+                <tr class="fw-bold"><td>Total:</td><td class="text-end">${formatCurrency(total)}</td></tr>
+            </table>
+        </div>
+        <div class="mb-3">
+            <strong>Items (${cart.length}):</strong>
+            <ul class="list-unstyled mt-2">
+                ${cart.map(item => `<li>${item.quantity}x ${item.name}</li>`).join('')}
+            </ul>
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('checkoutModal')).show();
+});
+
+// Confirm sale
+document.getElementById('confirmSaleBtn').addEventListener('click', function() {
+    if (cart.length === 0) return;
+    
+    const btn = this;
+    showLoading(btn);
+    
+    // Set cart data in form
+    document.querySelector('[name="cart_data"]').value = JSON.stringify(cart);
+    
+    // Submit form
+    const formData = new FormData(document.getElementById('saleForm'));
+    
+    fetch('{{ url_for("pos.complete_sale") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading(btn, 'Complete Sale');
+        
+        if (data.success) {
+            // Show success and redirect to receipt
+            alert('Sale completed successfully!');
+            window.location.href = `{{ url_for('pos.receipt', sale_id=0) }}`.replace('0', data.sale_id);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        hideLoading(btn, 'Complete Sale');
+        alert('Error completing sale: ' + error.message);
+    });
+});
+
+function convertWhatsAppOrder(orderId) {
+    window.location.href = `{{ url_for('pos.convert_whatsapp_order', order_id=0) }}`.replace('0', orderId);
+}
+
+// Barcode scanner support
+document.addEventListener('keydown', function(e) {
+    // Focus on search input when typing (for barcode scanners)
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        if (e.key.length === 1 && e.key.match(/[a-z0-9]/i)) {
+            document.getElementById('productSearch').focus();
+        }
+    }
+});
+</script>
+{% endblock %}

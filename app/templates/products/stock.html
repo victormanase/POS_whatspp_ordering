@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Stock Management</h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('products.products') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-box me-1"></i>All Products
+                    </a>
+                    <a href="{{ url_for('products.purchases') }}" class="btn btn-outline-success">
+                        <i class="fas fa-plus me-1"></i>Record Purchase
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link {% if current_filter == 'all' %}active{% endif %}" 
+                       href="{{ url_for('products.stock', filter='all') }}">
+                        <i class="fas fa-list me-1"></i>All Stock
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if current_filter == 'low' %}active{% endif %}" 
+                       href="{{ url_for('products.stock', filter='low') }}">
+                        <i class="fas fa-exclamation-triangle me-1 text-warning"></i>Low Stock
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if current_filter == 'out' %}active{% endif %}" 
+                       href="{{ url_for('products.stock', filter='out') }}">
+                        <i class="fas fa-times-circle me-1 text-danger"></i>Out of Stock
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Stock Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Total Items</h6>
+                                    <h4 class="mb-0">{{ products.total }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-boxes fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">In Stock</h6>
+                                    <h4 class="mb-0">{{ products.items | selectattr('stock_quantity', '>', 0) | list | length }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Low Stock</h6>
+                                    <h4 class="mb-0">{{ products.items | selectattr('is_low_stock') | list | length }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Out of Stock</h6>
+                                    <h4 class="mb-0">{{ products.items | selectattr('stock_quantity', '==', 0) | list | length }}</h4>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-times-circle fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock Table -->
+            {% if products.items %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if current_filter == 'low' %}Low Stock Items
+                        {% elif current_filter == 'out' %}Out of Stock Items
+                        {% else %}All Stock Items
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Category</th>
+                                    <th class="text-center">Current Stock</th>
+                                    <th class="text-center">Reorder Level</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Stock Value</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products.items %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if product.image_filename %}
+                                            <img src="{{ url_for('static', filename='uploads/' + product.image_filename) }}" 
+                                                 class="rounded me-3" width="40" height="40" alt="{{ product.name }}">
+                                            {% else %}
+                                            <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="fas fa-image text-muted"></i>
+                                            </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ product.name }}</strong>
+                                                {% if product.barcode %}
+                                                <br><small class="text-muted"><code>{{ product.barcode }}</code></small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ product.category.name }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge {% if product.stock_quantity == 0 %}bg-danger{% elif product.is_low_stock %}bg-warning{% else %}bg-success{% endif %}">
+                                            {{ product.stock_quantity }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {{ product.reorder_level }}
+                                    </td>
+                                    <td class="text-end">
+                                        {{ formatCurrency(product.selling_price) }}
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>{{ formatCurrency(product.selling_price * product.stock_quantity) }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if product.stock_quantity == 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                        {% elif product.is_low_stock %}
+                                        <span class="badge bg-warning">Low Stock</span>
+                                        {% else %}
+                                        <span class="badge bg-success">In Stock</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('products.view_product', id=product.id) }}" 
+                                               class="btn btn-outline-info" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('products.edit_product', id=product.id) }}" 
+                                               class="btn btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="updateStock({{ product.id }}, '{{ product.name }}', {{ product.stock_quantity }})" 
+                                                    title="Update Stock">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if products.pages > 1 %}
+                    <nav aria-label="Stock pagination">
+                        <ul class="pagination justify-content-center mt-4">
+                            {% if products.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('products.stock', page=products.prev_num, filter=current_filter) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in products.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != products.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('products.stock', page=page_num, filter=current_filter) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if products.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('products.stock', page=products.next_num, filter=current_filter) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+                    <h5>No stock items found</h5>
+                    {% if current_filter == 'low' %}
+                    <p class="text-muted">Great! No products are currently low on stock.</p>
+                    {% elif current_filter == 'out' %}
+                    <p class="text-muted">Great! No products are currently out of stock.</p>
+                    {% else %}
+                    <p class="text-muted">Start by adding some products to your inventory.</p>
+                    <a href="{{ url_for('products.add_product') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add First Product
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Update Stock Modal -->
+<div class="modal fade" id="updateStockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Stock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updateStockForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Product</label>
+                        <div id="stockProductName" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="form-label">Current Stock</label>
+                            <div id="currentStock" class="form-control-plaintext text-primary fw-bold"></div>
+                        </div>
+                        <div class="col-6">
+                            <label for="stockQuantity" class="form-label">Add Quantity</label>
+                            <input type="number" class="form-control" id="stockQuantity" min="1" required>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label for="stockNote" class="form-label">Note (optional)</label>
+                        <input type="text" class="form-control" id="stockNote" placeholder="Purchase reference, reason, etc.">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Update Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentProductId = null;
+
+function updateStock(productId, productName, currentStock) {
+    currentProductId = productId;
+    document.getElementById('stockProductName').textContent = productName;
+    document.getElementById('currentStock').textContent = currentStock;
+    document.getElementById('stockQuantity').value = '';
+    document.getElementById('stockNote').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('updateStockModal'));
+    modal.show();
+}
+
+document.getElementById('updateStockForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!currentProductId) return;
+    
+    const quantity = parseInt(document.getElementById('stockQuantity').value);
+    const note = document.getElementById('stockNote').value;
+    
+    if (!quantity || quantity < 1) {
+        alert('Please enter a valid quantity');
+        return;
+    }
+    
+    // This would be implemented with a proper endpoint
+    fetch('/products/update-stock', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            product_id: currentProductId,
+            quantity: quantity,
+            note: note
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('updateStockModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to update stock'));
+        }
+    })
+    .catch(error => {
+        alert('Error updating stock. For now, please use the Edit Product page to update stock.');
+    });
+});
+</script>
+{% endblock %}

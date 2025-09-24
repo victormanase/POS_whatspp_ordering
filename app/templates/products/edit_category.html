@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Category{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Edit Category</h2>
+                <a href="{{ url_for('products.categories') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Categories
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Category Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="editCategoryForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.name.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="3") }}
+                            {% if form.description.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.description.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('products.categories') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Category Statistics -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Category Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h4 class="text-primary mb-1">0</h4>
+                                <small class="text-muted">Products</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h4 class="text-success mb-1">{{ formatCurrency(0) }}</h4>
+                            <small class="text-muted">Total Value</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Info -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Information</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Created</small>
+                            <div>{{ category.created_at.strftime('%B %d, %Y') if category.created_at else 'N/A' }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Category ID</small>
+                            <div>#{{ category.id }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-focus on name field
+    const nameField = document.getElementById('name');
+    if (nameField) {
+        nameField.focus();
+    }
+    
+    // Form validation
+    const form = document.getElementById('editCategoryForm');
+    form.addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        if (!name) {
+            e.preventDefault();
+            alert('Please enter a category name.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}
