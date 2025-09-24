@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask
+instance/
+.webassets-cache
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+app.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Documentation
+README.md
+WHATSAPP_ALTERNATIVES.md
+LICENSE
+
+# Testing
+test_*.py
+*_test.py
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Development files
+check_*.py
+debug_*.py
+reset_*.py
+create_admin_user.py
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Environment files (should be handled via Docker env)
+.env
+
+# Uploads directory (will be mounted as volume)
+app/static/uploads/*
+
+# Migration files (handled separately)
+migrations/versions/*.pyc
