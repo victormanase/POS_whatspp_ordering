@@ -1,0 +1,685 @@
+{% extends "base.html" %}
+
+{% block title %}WhatsApp Orders{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fab fa-whatsapp me-2 text-success"></i>WhatsApp Orders</h2>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="connectWhatsApp()">
+                        <i class="fab fa-whatsapp me-2"></i>Connect WhatsApp
+                    </button>
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-filter me-1"></i>Filter
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('pos.whatsapp_orders') }}">All Orders</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('pos.whatsapp_orders', filter='pending') }}">Pending</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('pos.whatsapp_orders', filter='confirmed') }}">Confirmed</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('pos.whatsapp_orders', filter='completed') }}">Completed</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('pos.whatsapp_orders', filter='cancelled') }}">Cancelled</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('pos.whatsapp_orders', filter='today') }}">Today</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- WhatsApp Connection Status -->
+            <div class="alert alert-info d-flex align-items-center mb-4" id="whatsappStatus">
+                <i class="fas fa-info-circle me-2"></i>
+                <div>
+                    <strong>WhatsApp Integration Status:</strong> 
+                    <span id="connectionStatus">Not Connected</span>
+                    <small class="d-block mt-1">Connect your WhatsApp Business account to start receiving orders directly.</small>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Pending Orders</h6>
+                                    <h4 class="mb-0">{{ pending_orders or 0 }}</h4>
+                                    <small>Need attention</small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-clock fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Confirmed Orders</h6>
+                                    <h4 class="mb-0">{{ confirmed_orders or 0 }}</h4>
+                                    <small>Ready to fulfill</small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Today's Revenue</h6>
+                                    <h4 class="mb-0">{{ formatCurrency(today_revenue) if today_revenue else formatCurrency(0) }}</h4>
+                                    <small>WhatsApp orders</small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-money-bill fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Total Orders</h6>
+                                    <h4 class="mb-0">{{ orders.total if orders else 0 }}</h4>
+                                    <small>All time</small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fab fa-whatsapp fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if orders and orders.items %}
+            <!-- Orders Table -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-0">WhatsApp Orders</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="searchOrders" placeholder="Search orders...">
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="ordersTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Customer</th>
+                                    <th>Phone</th>
+                                    <th class="text-center">Items</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Delivery Address</th>
+                                    <th>Order Time</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders.items %}
+                                <tr data-order-id="{{ order.id }}">
+                                    <td>
+                                        <strong>#WA{{ order.id }}</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                                 style="width: 32px; height: 32px;">
+                                                <i class="fab fa-whatsapp text-white fa-sm"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ order.customer_name }}</strong>
+                                                {% if order.is_returning_customer %}
+                                                <br><small class="text-success"><i class="fas fa-star"></i> Returning Customer</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <a href="https://wa.me/{{ order.customer_phone.replace('+', '') }}" 
+                                           target="_blank" class="text-decoration-none">
+                                            <i class="fab fa-whatsapp text-success me-1"></i>{{ order.customer_phone }}
+                                        </a>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if order.items %}
+                                            <span class="badge bg-info">{{ order.items|length }} items</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0 items</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>{{ formatCurrency(order.total_amount) }}</strong>
+                                        {% if order.delivery_fee > 0 %}
+                                        <br><small class="text-muted">+ {{ formatCurrency(order.delivery_fee) }} delivery</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if order.delivery_address %}
+                                            <span title="{{ order.delivery_address }}">
+                                                {{ order.delivery_address[:30] }}{% if order.delivery_address|length > 30 %}...{% endif %}
+                                            </span>
+                                            {% if order.delivery_instructions %}
+                                            <br><small class="text-muted">{{ order.delivery_instructions[:25] }}...</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Pickup</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>
+                                            {{ order.created_at.strftime('%d %b') }}
+                                            <br><small class="text-muted">{{ order.created_at.strftime('%I:%M %p') }}</small>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if order.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif order.status == 'confirmed' %}
+                                            <span class="badge bg-primary">Confirmed</span>
+                                        {% elif order.status == 'preparing' %}
+                                            <span class="badge bg-info">Preparing</span>
+                                        {% elif order.status == 'ready' %}
+                                            <span class="badge bg-success">Ready</span>
+                                        {% elif order.status == 'delivered' %}
+                                            <span class="badge bg-success">Delivered</span>
+                                        {% elif order.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif order.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Cancelled</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ order.status|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-info" 
+                                                    onclick="viewOrder({{ order.id }})" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="chatCustomer('{{ order.customer_phone }}')" title="Chat on WhatsApp">
+                                                <i class="fab fa-whatsapp"></i>
+                                            </button>
+                                            {% if order.status == 'pending' %}
+                                            <button type="button" class="btn btn-outline-primary" 
+                                                    onclick="confirmOrder({{ order.id }})" title="Confirm Order">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if order.status in ['confirmed', 'preparing'] %}
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="updateOrderStatus({{ order.id }}, 'ready')" title="Mark Ready">
+                                                <i class="fas fa-check-double"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if order.status == 'ready' %}
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="updateOrderStatus({{ order.id }}, 'delivered')" title="Mark Delivered">
+                                                <i class="fas fa-truck"></i>
+                                            </button>
+                                            {% endif %}
+                                            {% if order.status not in ['completed', 'cancelled'] %}
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="cancelOrder({{ order.id }})" title="Cancel Order">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if orders.pages > 1 %}
+                    <nav aria-label="Orders pagination">
+                        <ul class="pagination justify-content-center mt-4">
+                            {% if orders.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('pos.whatsapp_orders', page=orders.prev_num) }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in orders.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != orders.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('pos.whatsapp_orders', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if orders.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('pos.whatsapp_orders', page=orders.next_num) }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fab fa-whatsapp fa-3x text-success mb-3"></i>
+                    <h5>No WhatsApp Orders Yet</h5>
+                    <p class="text-muted">Connect your WhatsApp Business account to start receiving orders.</p>
+                    <button class="btn btn-success" onclick="connectWhatsApp()">
+                        <i class="fab fa-whatsapp me-2"></i>Connect WhatsApp Business
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Order Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="chatCurrentCustomer()">
+                    <i class="fab fa-whatsapp me-1"></i>Chat Customer
+                </button>
+                <button type="button" class="btn btn-primary" onclick="convertToSale()">
+                    <i class="fas fa-cash-register me-1"></i>Process Sale
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- WhatsApp Connection Modal -->
+<div class="modal fade" id="whatsappConnectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Connect WhatsApp Business</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class="fab fa-whatsapp fa-3x text-success mb-3"></i>
+                    <h6>Scan QR Code with WhatsApp</h6>
+                    <p class="text-muted">Use your WhatsApp Business app to scan this QR code</p>
+                </div>
+                
+                <div class="text-center">
+                    <div id="qrCodeContainer" class="mb-3">
+                        <!-- QR Code will be generated here -->
+                        <div class="placeholder-glow">
+                            <div class="placeholder" style="width: 200px; height: 200px; margin: 0 auto;"></div>
+                        </div>
+                    </div>
+                    <div class="spinner-border text-success" role="status" id="connectionSpinner">
+                        <span class="visually-hidden">Waiting for connection...</span>
+                    </div>
+                    <p class="mt-2" id="connectionText">Waiting for connection...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="refreshQRCode()">
+                    <i class="fas fa-refresh me-1"></i>Refresh QR Code
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalTitle">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                Are you sure you want to perform this action?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmModalBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentOrderId = null;
+let currentCustomerPhone = null;
+
+// Search functionality
+document.getElementById('searchOrders').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#ordersTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+function connectWhatsApp() {
+    const modal = new bootstrap.Modal(document.getElementById('whatsappConnectionModal'));
+    modal.show();
+    
+    // Simulate QR code generation
+    generateQRCode();
+    checkConnectionStatus();
+}
+
+function generateQRCode() {
+    // This would typically generate a real QR code
+    document.getElementById('qrCodeContainer').innerHTML = `
+        <div style="width: 200px; height: 200px; background: #f0f0f0; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+            <span class="text-muted">QR Code</span>
+        </div>
+    `;
+}
+
+function refreshQRCode() {
+    document.getElementById('connectionSpinner').style.display = 'inline-block';
+    document.getElementById('connectionText').textContent = 'Generating new QR code...';
+    
+    setTimeout(() => {
+        generateQRCode();
+        document.getElementById('connectionText').textContent = 'Waiting for connection...';
+    }, 1000);
+}
+
+function checkConnectionStatus() {
+    // Simulate connection check
+    fetch('/pos/whatsapp/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.connected) {
+                document.getElementById('connectionSpinner').style.display = 'none';
+                document.getElementById('connectionText').innerHTML = '<i class="fas fa-check text-success"></i> Connected successfully!';
+                document.getElementById('connectionStatus').textContent = 'Connected';
+                document.getElementById('whatsappStatus').className = 'alert alert-success d-flex align-items-center mb-4';
+                
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('whatsappConnectionModal')).hide();
+                    location.reload();
+                }, 2000);
+            } else {
+                setTimeout(() => checkConnectionStatus(), 3000);
+            }
+        })
+        .catch(error => {
+            console.error('Error checking connection:', error);
+            setTimeout(() => checkConnectionStatus(), 5000);
+        });
+}
+
+function viewOrder(orderId) {
+    currentOrderId = orderId;
+    
+    fetch(`/pos/whatsapp_orders/${orderId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const order = data.order;
+                currentCustomerPhone = order.customer_phone;
+                
+                let itemsHtml = '';
+                
+                if (order.items && order.items.length > 0) {
+                    itemsHtml = `
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-center">Quantity</th>
+                                        <th class="text-end">Unit Price</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    order.items.forEach(item => {
+                        itemsHtml += `
+                            <tr>
+                                <td>${item.product_name}</td>
+                                <td class="text-center">${item.quantity}</td>
+                                <td class="text-end">${formatCurrency(item.unit_price)}</td>
+                                <td class="text-end">${formatCurrency(item.total_price)}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    itemsHtml += `
+                                </tbody>
+                                <tfoot>
+                                    <tr><td colspan="3"><strong>Subtotal:</strong></td><td class="text-end">${formatCurrency(order.subtotal)}</td></tr>
+                                    ${order.delivery_fee > 0 ? `<tr><td colspan="3"><strong>Delivery Fee:</strong></td><td class="text-end">${formatCurrency(order.delivery_fee)}</td></tr>` : ''}
+                                    <tr class="table-dark"><th colspan="3">Total</th><th class="text-end">${formatCurrency(order.total_amount)}</th></tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    itemsHtml = '<p class="text-muted">No items in this order.</p>';
+                }
+                
+                const content = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fab fa-whatsapp text-success me-2"></i>Order Information</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Order #:</strong></td><td>#WA${order.id}</td></tr>
+                                <tr><td><strong>Customer:</strong></td><td>${order.customer_name}</td></tr>
+                                <tr><td><strong>Phone:</strong></td><td>
+                                    <a href="https://wa.me/${order.customer_phone.replace('+', '')}" target="_blank" class="text-decoration-none">
+                                        <i class="fab fa-whatsapp text-success"></i> ${order.customer_phone}
+                                    </a>
+                                </td></tr>
+                                <tr><td><strong>Order Date:</strong></td><td>${order.created_at}</td></tr>
+                                <tr><td><strong>Status:</strong></td><td>
+                                    <span class="badge ${order.status === 'pending' ? 'bg-warning' : order.status === 'confirmed' ? 'bg-primary' : order.status === 'completed' ? 'bg-success' : 'bg-secondary'}">
+                                        ${order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Unknown'}
+                                    </span>
+                                </td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-map-marker-alt me-2"></i>Delivery Information</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Delivery Address:</strong></td><td>${order.delivery_address || 'Pickup'}</td></tr>
+                                <tr><td><strong>Instructions:</strong></td><td>${order.delivery_instructions || 'None'}</td></tr>
+                                <tr><td><strong>Delivery Fee:</strong></td><td>${formatCurrency(order.delivery_fee || 0)}</td></tr>
+                                <tr><td><strong>Payment Method:</strong></td><td>${order.payment_method || 'Not specified'}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6><i class="fas fa-shopping-cart me-2"></i>Order Items</h6>
+                    ${itemsHtml}
+                    
+                    ${order.notes ? `
+                    <hr>
+                    <h6><i class="fas fa-sticky-note me-2"></i>Customer Notes</h6>
+                    <p class="text-muted">${order.notes}</p>
+                    ` : ''}
+                `;
+                
+                document.getElementById('orderDetailsContent').innerHTML = content;
+                
+                const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+                modal.show();
+            } else {
+                alert('Error loading order details: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading order details');
+        });
+}
+
+function chatCustomer(phone) {
+    const cleanPhone = phone.replace('+', '');
+    const message = encodeURIComponent('Hello! Thank you for your order. How can I help you today?');
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+}
+
+function chatCurrentCustomer() {
+    if (currentCustomerPhone) {
+        chatCustomer(currentCustomerPhone);
+    }
+}
+
+function confirmOrder(orderId) {
+    document.getElementById('confirmModalTitle').textContent = 'Confirm Order';
+    document.getElementById('confirmModalBody').innerHTML = `
+        Are you sure you want to confirm this WhatsApp order?<br>
+        <small class="text-muted">This will send a confirmation message to the customer.</small>
+    `;
+    
+    const confirmBtn = document.getElementById('confirmModalBtn');
+    confirmBtn.textContent = 'Confirm Order';
+    confirmBtn.className = 'btn btn-primary';
+    
+    confirmBtn.onclick = function() {
+        updateOrderStatus(orderId, 'confirmed');
+        bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+    };
+    
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+}
+
+function updateOrderStatus(orderId, status) {
+    fetch(`/pos/whatsapp_orders/${orderId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating order status');
+    });
+}
+
+function cancelOrder(orderId) {
+    document.getElementById('confirmModalTitle').textContent = 'Cancel Order';
+    document.getElementById('confirmModalBody').innerHTML = `
+        Are you sure you want to cancel this order?<br>
+        <small class="text-danger">This action cannot be undone and will notify the customer.</small>
+    `;
+    
+    const confirmBtn = document.getElementById('confirmModalBtn');
+    confirmBtn.textContent = 'Cancel Order';
+    confirmBtn.className = 'btn btn-danger';
+    
+    confirmBtn.onclick = function() {
+        updateOrderStatus(orderId, 'cancelled');
+        bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+    };
+    
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+}
+
+function convertToSale() {
+    if (currentOrderId) {
+        window.location.href = `/pos/convert_order/${currentOrderId}`;
+    }
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-TZ', {
+        style: 'currency',
+        currency: 'TZS',
+        minimumFractionDigits: 0
+    }).format(amount);
+}
+
+// Auto-refresh orders every 30 seconds when connected
+setInterval(() => {
+    if (document.getElementById('connectionStatus').textContent === 'Connected') {
+        // Refresh order counts without full page reload
+        fetch('/pos/whatsapp_orders/refresh')
+            .then(response => response.json())
+            .then(data => {
+                // Update summary cards if needed
+            })
+            .catch(error => console.log('Refresh failed:', error));
+    }
+}, 30000);
+</script>
+{% endblock %}

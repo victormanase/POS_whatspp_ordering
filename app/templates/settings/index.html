@@ -39,6 +39,7 @@
                         </div>
                         <div class="card-body">
                             <form action="{{ url_for('settings.update_general_settings') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
@@ -104,6 +105,7 @@
                                     </div>
 
                                     <form id="currencyForm" action="{{ url_for('settings.currency_settings') }}" method="POST">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <div class="mb-3">
                                             <label for="currency_code" class="form-label">Select Currency</label>
                                             <select class="form-select" id="currency_code" name="currency_code" required>
@@ -172,6 +174,7 @@
                         </div>
                         <div class="card-body">
                             <form action="{{ url_for('settings.update_general_settings') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <div class="mb-3">
                                     <label for="receipt_footer" class="form-label">Receipt Footer Message</label>
                                     <textarea class="form-control" id="receipt_footer" name="receipt_footer" 
@@ -200,6 +203,7 @@
             </div>
             <div class="modal-body">
                 <form id="addUserForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
                         <input type="text" class="form-control" id="username" name="username" required>
@@ -316,7 +320,10 @@ function addUser() {
 
 function toggleUserStatus(userId) {
     fetch(`{{ url_for('settings.toggle_user_status', user_id=0) }}`.replace('0', userId), {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
     })
     .then(response => response.json())
     .then(data => {
@@ -334,7 +341,10 @@ function toggleUserStatus(userId) {
 
 function toggleAdminStatus(userId) {
     fetch(`{{ url_for('settings.toggle_admin_status', user_id=0) }}`.replace('0', userId), {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
     })
     .then(response => response.json())
     .then(data => {
